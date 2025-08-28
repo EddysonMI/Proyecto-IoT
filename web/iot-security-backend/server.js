@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 
-
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -13,22 +12,34 @@ let systemState = { armed: false, lastEvent: null };
 let events = [];
 let clients = [];
 
+// Ruta raíz de prueba
+app.get("/", (req, res) => {
+  res.send("🚀 Backend IoT Security funcionando. Usa /api/state o /api/events para interactuar.");
+});
+
 // SSE
 app.get("/api/stream", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
+
   clients.push(res);
-  req.on("close", () => { clients = clients.filter(c => c !== res); });
+  req.on("close", () => {
+    clients = clients.filter(c => c !== res);
+  });
 });
 
 function broadcastEvent(event) {
-  clients.forEach(client => client.write(`data: ${JSON.stringify(event)}\\n\\n`));
+  clients.forEach(client =>
+    client.write(`data: ${JSON.stringify(event)}\n\n`)
+  );
 }
 
 // Estado actual
-app.get("/api/state", (req, res) => { res.json(systemState); });
+app.get("/api/state", (req, res) => {
+  res.json(systemState);
+});
 
 // Armar/Desarmar
 app.post("/api/arm", (req, res) => {
@@ -61,7 +72,8 @@ app.get("/api/events", (req, res) => {
 app.post("/api/events", (req, res) => {
   const { type, detail, classification } = req.body;
   const event = {
-    type, detail,
+    type,
+    detail,
     classification: classification || "unclassified",
     timestamp: new Date().toISOString(),
   };
